@@ -12,6 +12,7 @@ const SAVE_DEBOUNCE_MS = 250;
 
 let chipCount = DEFAULT_CHIP_COUNT;
 let saveTimer = null;
+let clearing = false;   // set while wiping, so teardown handlers can't resurrect the draft
 
 /* ------------------------------------------------------------------ draft */
 
@@ -39,6 +40,7 @@ function currentDraft() {
 }
 
 function saveDraft() {
+  if (clearing) return;
   try {
     localStorage.setItem(DRAFT_KEY, JSON.stringify(currentDraft()));
     flashSaved();
@@ -127,6 +129,12 @@ function buildRows(count) {
 function restoreDraft() {
   const d = readDraft();
   if (!d) return;
+
+  /* An emptied sheet still gets saved (the teardown handlers fire on any
+     navigation), so check there's something to restore before claiming there is. */
+  const hasContent = (d.name || '').trim() !== ''
+    || (d.entries || []).some((e) => (e.guess || '').trim() !== '' || Number.isInteger(e.rank));
+
   if (typeof d.name === 'string') el('#player-name').value = d.name;
   (d.entries || []).forEach((e) => {
     const input = el(`#guess-${e.chip}`);
@@ -134,7 +142,7 @@ function restoreDraft() {
     if (typeof e.guess === 'string') input.value = e.guess;
     if (Number.isInteger(e.rank) && e.rank >= RANK_MIN && e.rank <= RANK_MAX) setRank(e.chip, e.rank);
   });
-  banner('info', 'Right where you left off. Nothing lost.');
+  if (hasContent) banner('info', 'Right where you left off. Nothing lost.');
 }
 
 function banner(kind, msg) {
@@ -189,6 +197,34 @@ async function submit(e) {
   }
 }
 
+/* Wipe the sheet in place.
+ *
+ * Deliberately NOT a reload: reloading fires pagehide, whose autosave would
+ * write the still-filled form straight back over the draft we just deleted —
+ * and browsers restore typed text across a reload regardless.
+ */
+function clearSheet() {
+  clearing = true;
+  clearTimeout(saveTimer);
+  try { localStorage.removeItem(DRAFT_KEY); } catch { /* blocked storage */ }
+
+  el('#player-name').value = '';
+  chipNumbers(chipCount).forEach((n) => {
+    el(`#guess-${n}`).value = '';
+    setRank(n, null);
+  });
+
+  const btn = el('#submit-btn');
+  btn.textContent = 'Submit my sheet 🫡';
+  btn.disabled = false;
+
+  banner('info', 'Wiped clean. Fresh start.');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  el('#player-name').focus();
+
+  clearing = false;
+}
+
 /* A short burst of snacks. Cleans itself up. */
 function celebrate() {
   const bits = ['🥔', '🍟', '🧂', '🎉', '🌶️', '🧀', '🥨'];
@@ -231,8 +267,7 @@ function celebrate() {
 
   el('#clear-btn').addEventListener('click', () => {
     if (!confirm('Wipe this whole sheet? Anything you already submitted stays on the board.')) return;
-    localStorage.removeItem(DRAFT_KEY);
-    location.reload();
+    clearSheet();
   });
 
   /* Last-ditch save if the page is being torn down mid-debounce. */
