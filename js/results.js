@@ -254,6 +254,35 @@ function wireOverrides() {
   });
 }
 
+/* ------------------------------------------------------------------ waiting */
+
+/* Nobody at a dinner table should have to pull-to-refresh. Poll gently until
+   the host opens the board, then draw it in place. */
+function waitForOpen() {
+  const tick = setInterval(async () => {
+    try {
+      const fresh = await loadConfig();
+      if (fresh.results_unlocked) {
+        clearInterval(tick);
+        if (await loadAll()) render();
+        return;
+      }
+      /* Host pressed "score & reveal" while this page was sitting on the
+         plain locked screen — swap in the waiting message. */
+      const scoring = ['requested', 'running'].includes(fresh.judging_state);
+      if (scoring && cfg.judging_state !== fresh.judging_state) {
+        cfg = fresh;
+        el('#sub').textContent = 'Scoring';
+        el('#content').innerHTML = `<div class="locked"><span class="lock-emoji">⏳</span>
+          <p><strong>Claude is scoring everyone's guesses.</strong></p>
+          <p>The board opens by itself in a moment — no need to refresh.</p></div>`;
+      } else {
+        cfg = fresh;
+      }
+    } catch { /* transient — keep waiting */ }
+  }, 5000);
+}
+
 /* ------------------------------------------------------------------ boot */
 
 (async function init() {
@@ -261,12 +290,19 @@ function wireOverrides() {
   try {
     const open = await loadAll();
     if (!open) {
-      el('#sub').textContent = 'Sealed';
-      el('#content').innerHTML = `<div class="locked"><span class="lock-emoji">🔒</span>
-        <p><strong>Results are locked until the host opens them.</strong></p>
-        <p>No peeking at other people's guesses mid-tasting — that's the whole point.</p>
-        <p style="margin-top:1.5rem"><a class="btn secondary" href="index.html${EVENT !== 'default' ? '?event=' + encodeURIComponent(EVENT) : ''}">Back to my sheet</a></p>
-      </div>`;
+      const scoring = ['requested', 'running'].includes(cfg.judging_state);
+      el('#sub').textContent = scoring ? 'Scoring' : 'Sealed';
+      el('#content').innerHTML = scoring
+        ? `<div class="locked"><span class="lock-emoji">⏳</span>
+            <p><strong>Claude is scoring everyone's guesses.</strong></p>
+            <p>The board opens by itself in a moment — no need to refresh.</p>
+          </div>`
+        : `<div class="locked"><span class="lock-emoji">🔒</span>
+            <p><strong>Results are locked until the host opens them.</strong></p>
+            <p>No peeking at other people's guesses mid-tasting — that's the whole point.</p>
+            <p style="margin-top:1.5rem"><a class="btn secondary" href="index.html${EVENT !== 'default' ? '?event=' + encodeURIComponent(EVENT) : ''}">Back to my sheet</a></p>
+          </div>`;
+      waitForOpen();
       return;
     }
     render();

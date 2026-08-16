@@ -123,3 +123,40 @@ values ('thanksgiving-2026', 'Thanksgiving Chip Challenge', 10);
 ```
 
 Then share `…/chip-challenge/?event=thanksgiving-2026`. No slug = the `default` event.
+
+## Automatic scoring on reveal
+
+The host has two reveal buttons. **Reveal now, skip scoring** unlocks immediately.
+**Score guesses & reveal** runs a Claude pass first:
+
+1. `chip_request_judging()` sets `judging_state = 'requested'` and leaves the
+   results locked. Guests see "Claude is scoring everyone's guesses."
+2. `watcher/judge-watcher.sh` — a systemd user service on Drew's machine — polls
+   for that state with plain `psql`, so idling costs nothing.
+3. It hands every guess and its real answer to `claude -p`, gets back a JSON
+   array of verdicts, writes them to `chip_judgments` as `judged_by = 'claude'`.
+4. Only then does it set `results_unlocked = true`. Nobody sees a half-judged board.
+
+Typical end-to-end: **under a minute** for 40 guesses.
+
+### It fails open, always
+
+A dinner party must never stall on this. If Claude times out, is missing, replies
+with junk, or the write fails, the watcher **unlocks the results anyway** with the
+automatic text-match verdicts and records why in `chip_config.judging_note`, which
+the admin page displays. If the watcher isn't running at all, the admin page warns
+after 3 minutes and the host can press "Stop waiting, reveal now".
+
+### Managing the watcher
+
+```bash
+systemctl --user status chip-judge-watcher     # is it up?
+systemctl --user restart chip-judge-watcher
+journalctl --user -u chip-judge-watcher -f     # live log
+tail -f ~/chip-challenge/watcher/watcher.log
+
+./watcher/judge-watcher.sh --once demo         # run one pass by hand
+```
+
+The unit file lives at `~/.config/systemd/user/chip-judge-watcher.service`. It is
+enabled, and the user has lingering on, so it survives logout and reboot.

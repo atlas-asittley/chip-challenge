@@ -23,6 +23,17 @@ create table if not exists chip_config (
   created_at        timestamptz not null default now()
 );
 
+-- Reveal is two-stage when the host asks for a scoring pass first:
+--   idle -> requested -> running -> done   (watcher unlocks at the end)
+--   ...  -> failed                          (watcher unlocks anyway, auto verdicts stand)
+--   skipped                                 (host revealed without waiting)
+alter table chip_config
+  add column if not exists judging_state text not null default 'idle';
+alter table chip_config
+  add column if not exists judging_requested_at timestamptz;
+alter table chip_config
+  add column if not exists judging_note text;
+
 -- ---------------------------------------------------------------- answer key (gated)
 create table if not exists chip_answers (
   event_slug   text primary key references chip_config(event_slug) on delete cascade,
@@ -261,7 +272,44 @@ set search_path = public
 as $$
 begin
   perform chip_require_host(slug, pw);
-  update chip_config set results_unlocked = unlocked where event_slug = slug;
+  update chip_config
+  set results_unlocked = unlocked,
+      judging_state = case when unlocked then 'skipped' else 'idle' end,
+      judging_note = null
+  where event_slug = slug;
+end;
+$$;
+
+-- Ask for a Claude scoring pass before the reveal. Deliberately does NOT
+-- unlock: the watcher does that once the rulings are written, so guests never
+-- see a half-judged board. If nothing picks this up, the host can still hit
+-- chip_set_lock to reveal immediately with the automatic verdicts.
+create or replace function chip_request_judging(slug text, pw text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  perform chip_require_host(slug, pw);
+
+  if not exists (select 1 from chip_submissions where event_slug = slug) then
+    raise exception 'Nobody has submitted a sheet yet';
+  end if;
+  if not exists (
+    select 1 from chip_answers
+    where event_slug = slug
+      and exists (select 1 from jsonb_array_elements_text(answers) a where trim(a) <> '')
+  ) then
+    raise exception 'Set the answer key first — there is nothing to judge against';
+  end if;
+
+  update chip_config
+  set judging_state = 'requested',
+      judging_requested_at = now(),
+      judging_note = null,
+      results_unlocked = false
+  where event_slug = slug;
 end;
 $$;
 
@@ -292,6 +340,7 @@ grant execute on function chip_submit(text, text, jsonb)                       t
 grant execute on function chip_set_answers(text, jsonb, text)                  to anon, authenticated;
 grant execute on function chip_set_event(text, text, int, text)                to anon, authenticated;
 grant execute on function chip_set_lock(text, boolean, text)                   to anon, authenticated;
+grant execute on function chip_request_judging(text, text)                     to anon, authenticated;
 grant execute on function chip_judge(text, uuid, int, boolean, text, text, text) to anon, authenticated;
 
 -- ================================================================ roster

@@ -164,9 +164,76 @@ async function setLocked(unlocked) {
 }
 
 function paintLock() {
-  el('#lock-state').textContent = cfg.results_unlocked ? 'OPEN' : 'locked';
+  const scoring = !cfg.results_unlocked
+    && (cfg.judging_state === 'requested' || cfg.judging_state === 'running');
+
+  el('#lock-state').textContent = cfg.results_unlocked ? 'OPEN' : scoring ? 'being scored' : 'locked';
+  el('#judge-btn').style.display = cfg.results_unlocked || scoring ? 'none' : '';
   el('#unlock-btn').style.display = cfg.results_unlocked ? 'none' : '';
+  el('#unlock-btn').textContent = scoring ? 'Stop waiting, reveal now' : 'Reveal now, skip scoring';
   el('#lock-btn').style.display = cfg.results_unlocked ? '' : 'none';
+
+  const status = el('#judge-status');
+  if (scoring) {
+    status.textContent = 'Claude is scoring the guesses… results open automatically when it finishes.';
+  } else if (cfg.results_unlocked && cfg.judging_note) {
+    status.textContent = cfg.judging_note;
+  } else {
+    status.textContent = '';
+  }
+}
+
+/* While a scoring pass is in flight, follow it so the buttons keep up.
+   If nothing is listening at all — machine off, watcher stopped — say so
+   rather than leaving guests on a waiting screen indefinitely. */
+const JUDGE_PATIENCE_MS = 3 * 60 * 1000;
+let judgePoll = null;
+function watchJudging() {
+  clearInterval(judgePoll);
+  const startedAt = Date.now();
+  let warned = false;
+  judgePoll = setInterval(async () => {
+    if (!warned && Date.now() - startedAt > JUDGE_PATIENCE_MS) {
+      warned = true;
+      banner('error', 'Scoring is taking longer than it should — the judge may be offline. Hit “Stop waiting, reveal now” to open the results with automatic scoring.');
+    }
+    try {
+      const fresh = await loadConfig();
+      const changed = fresh.results_unlocked !== cfg.results_unlocked
+        || fresh.judging_state !== cfg.judging_state;
+      cfg = fresh;
+      if (changed) paintLock();
+      if (fresh.results_unlocked || !['requested', 'running'].includes(fresh.judging_state)) {
+        clearInterval(judgePoll);
+        if (fresh.results_unlocked) {
+          flash('Results are live');
+          banner('ok', (fresh.judging_note ? fresh.judging_note + ' ' : '') + 'Results are open.');
+          buildAnswerRows(cfg.chip_count, await currentAnswers());
+        }
+      }
+    } catch { /* transient network — try again next tick */ }
+  }, 4000);
+}
+
+async function requestJudging() {
+  const btn = el('#judge-btn');
+  btn.disabled = true;
+  try {
+    await sb('/rpc/chip_request_judging', {
+      method: 'POST',
+      prefer: 'return=minimal',
+      body: { slug: EVENT, pw: hostPw },
+    });
+    cfg.judging_state = 'requested';
+    cfg.results_unlocked = false;
+    paintLock();
+    banner('info', 'Scoring started. This page opens the results by itself when Claude is done.');
+    watchJudging();
+  } catch (err) {
+    handleError(err, 'Could not start scoring');
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 /* ------------------------------------------------------------------ roster */
@@ -206,6 +273,9 @@ async function paintAll() {
   paintLock();
   paintHostMode();
   loadRoster();
+
+  /* Reopened the page mid-pass? Pick the wait back up. */
+  if (!cfg.results_unlocked && ['requested', 'running'].includes(cfg.judging_state)) watchJudging();
 
   if (!cfg.results_unlocked) {
     banner('info', 'Results are locked, so the answer boxes start blank even if you already saved a key — the database hides it from this page too. Retyping and saving overwrites it.');
@@ -261,6 +331,7 @@ async function paintAll() {
 
   el('#save-answers-btn').addEventListener('click', saveAnswers);
   el('#save-event-btn').addEventListener('click', saveEvent);
+  el('#judge-btn').addEventListener('click', requestJudging);
   el('#unlock-btn').addEventListener('click', () => setLocked(true));
   el('#lock-btn').addEventListener('click', () => {
     if (confirm('Hide results from everyone again?')) setLocked(false);

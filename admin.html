@@ -77,11 +77,19 @@
     <div class="switch-row">
       <div>
         <div class="switch-label">Results are <span id="lock-state">locked</span></div>
-        <div class="switch-sub">Unlocking shows everyone the answers, all guesses, and the leaderboards.</div>
+        <div class="switch-sub">Revealing shows everyone the answers, all guesses, and the leaderboards.</div>
       </div>
     </div>
-    <button type="button" class="btn" id="unlock-btn">Unlock results</button>
+    <p class="hint" id="judge-status"></p>
+    <button type="button" class="btn" id="judge-btn">Score guesses &amp; reveal</button>
+    <button type="button" class="btn secondary" id="unlock-btn">Reveal now, skip scoring</button>
     <button type="button" class="btn ghost" id="lock-btn">Lock again</button>
+    <p class="hint">
+      “Score guesses &amp; reveal” hands every guess to Claude to rule on the close
+      calls, then opens the results once it’s done — usually under a minute.
+      Guests see a waiting screen until then. If it can’t be reached, the results
+      open anyway with automatic scoring.
+    </p>
   </section>
 
   <section class="card">

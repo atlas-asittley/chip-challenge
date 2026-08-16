@@ -1,0 +1,18 @@
+2026-08-16 13:57:57  [demo] judging requested
+2026-08-16 13:57:58  [demo] asking Claude to rule on 40 guesses
+invalid command \''t
+2026-08-16 13:58:35  [demo] writing verdicts failed — revealing with automatic scoring
+2026-08-16 13:59:07  [demo] judging requested
+2026-08-16 13:59:08  [demo] asking Claude to rule on 40 guesses
+2026-08-16 13:59:45  [demo] wrote 40 rulings — unlocking
+2026-08-16 14:00:07  watcher started (poll 10s)
+2026-08-16 14:01:20  [demo] judging requested
+2026-08-16 14:01:21  [demo] asking Claude to rule on 40 guesses
+2026-08-16 14:01:57  [demo] wrote 40 rulings — unlocking
+2026-08-16 14:02:09  [demo] judging requested
+2026-08-16 14:02:09  [demo] asking Claude to rule on 40 guesses
+2026-08-16 14:02:11  [demo] claude failed (rc=124) — revealing with automatic scoring
+2026-08-16 14:02:12  [demo] judging requested
+2026-08-16 14:02:13  [demo] asking Claude to rule on 40 guesses
+timeout: failed to run command ‘claude’: No such file or directory
+2026-08-16 14:02:13  [demo] claude failed (rc=127) — revealing with automatic scoring
