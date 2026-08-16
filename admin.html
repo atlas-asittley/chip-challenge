@@ -27,6 +27,19 @@
 
   <div id="banner" class="banner"></div>
 
+  <section class="card" id="gate" hidden>
+    <h2>Host password</h2>
+    <p class="hint" style="margin-bottom:.75rem">
+      Checked by the database, not this page — the password isn't in the source.
+    </p>
+    <form id="gate-form">
+      <input type="password" id="gate-input" placeholder="Password" autocomplete="current-password">
+      <button type="submit" class="btn" id="gate-btn" style="margin-top:.6rem">Unlock host controls</button>
+    </form>
+  </section>
+
+  <div id="host-only" hidden>
+
   <section class="card">
     <h2>Share this with everyone</h2>
     <input type="text" id="share-url" readonly>
@@ -76,6 +89,14 @@
     <p class="hint">Lets you flip any right/wrong call from the results page. Only affects this phone.</p>
     <button type="button" class="btn ghost" id="hostmode-btn">Turn host mode on</button>
   </section>
+
+  <section class="card">
+    <h2>Done hosting?</h2>
+    <p class="hint">Forgets the password on this device. Use it if you hand your phone around.</p>
+    <button type="button" class="btn ghost" id="signout-btn" style="margin-top:.5rem">Forget password</button>
+  </section>
+
+  </div><!-- /host-only -->
 
 </main>
 

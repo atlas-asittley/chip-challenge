@@ -81,18 +81,15 @@ as $$
   select coalesce((select results_unlocked from chip_config where event_slug = slug), false);
 $$;
 
--- ---- chip_config: read freely, host may flip the unlock switch.
+-- ---- chip_config: readable by everyone (the guest page needs the chip count),
+-- but writes go through the password-checked functions. A direct UPDATE policy
+-- here would let anyone flip results_unlocked and blow the reveal.
 drop policy if exists chip_config_select on chip_config;
 create policy chip_config_select on chip_config
   for select to anon, authenticated using (true);
 
 drop policy if exists chip_config_insert on chip_config;
-create policy chip_config_insert on chip_config
-  for insert to anon, authenticated with check (true);
-
 drop policy if exists chip_config_update on chip_config;
-create policy chip_config_update on chip_config
-  for update to anon, authenticated using (true) with check (true);
 
 -- ---- chip_answers: written via chip_set_answers(), readable ONLY after unlock.
 drop policy if exists chip_answers_select on chip_answers;
@@ -120,10 +117,59 @@ create policy chip_judgments_select on chip_judgments
 drop policy if exists chip_judgments_insert on chip_judgments;
 drop policy if exists chip_judgments_update on chip_judgments;
 
+-- ================================================================ host password
+-- The host password lives here and nowhere else — in particular, not in any
+-- file the browser downloads. RLS is on with NO policy at all, so the public
+-- key cannot read this table by any query; only the SECURITY DEFINER functions
+-- below can see it. That's what makes the gate real rather than decorative:
+-- every privileged action re-checks the password server-side, so skipping the
+-- prompt in devtools gains a guest nothing.
+create table if not exists chip_secrets (
+  event_slug    text primary key references chip_config(event_slug) on delete cascade,
+  host_password text not null
+);
+
+alter table chip_secrets enable row level security;
+revoke all on chip_secrets from anon, authenticated;
+
+create or replace function chip_check_host(slug text, pw text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from chip_secrets s
+    where s.event_slug = slug and s.host_password = pw
+  );
+$$;
+
+-- Raises rather than returns, so every caller below fails closed.
+create or replace function chip_require_host(slug text, pw text)
+returns void
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+begin
+  if not chip_check_host(slug, pw) then
+    raise exception 'Wrong host password';
+  end if;
+end;
+$$;
+
+grant execute on function chip_check_host(text, text) to anon, authenticated;
+
 -- ================================================================ write RPCs
--- All three are SECURITY DEFINER so they can upsert past the read gate. They
--- are the only write path for these tables, which is also why the validation
--- lives in here rather than in the browser.
+-- All SECURITY DEFINER so they can upsert past the read gate. They are the only
+-- write path for these tables, which is why both the validation and the host
+-- password check live in here rather than in the browser.
+
+-- Signatures changed when the password argument was added; drop the old ones.
+drop function if exists chip_set_answers(text, jsonb);
+drop function if exists chip_judge(text, uuid, int, boolean, text, text);
 
 -- Submit or update one person's sheet. Same name = same sheet, so someone who
 -- reopens the page and fixes an answer doesn't appear on the board twice.
@@ -161,19 +207,21 @@ begin
 end;
 $$;
 
--- Host sets the real flavors. Writable while locked, readable only after unlock.
-create or replace function chip_set_answers(slug text, answers jsonb)
+-- ---------------------------------------------------------------- host-only
+-- Everything below requires the host password.
+
+-- Set the real flavors. Writable while locked, readable only after unlock.
+create or replace function chip_set_answers(slug text, answers jsonb, pw text)
 returns void
 language plpgsql
 security definer
 set search_path = public
 as $$
 begin
+  perform chip_require_host(slug, pw);
+
   if jsonb_typeof(answers) is distinct from 'array' then
     raise exception 'Answers must be a list';
-  end if;
-  if not exists (select 1 from chip_config c where c.event_slug = slug) then
-    raise exception 'No such event: %', slug;
   end if;
 
   insert into chip_answers (event_slug, answers, updated_at)
@@ -183,9 +231,43 @@ begin
 end;
 $$;
 
+-- Rename the event or change how many chips are on the sheet.
+create or replace function chip_set_event(slug text, name text, count int, pw text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  perform chip_require_host(slug, pw);
+
+  if count < 1 or count > 30 then
+    raise exception 'Chip count must be between 1 and 30';
+  end if;
+
+  update chip_config
+  set event_name = coalesce(nullif(trim(name), ''), 'Chip Challenge'),
+      chip_count = count
+  where event_slug = slug;
+end;
+$$;
+
+-- The reveal. This is the one a guest would most want to press early.
+create or replace function chip_set_lock(slug text, unlocked boolean, pw text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  perform chip_require_host(slug, pw);
+  update chip_config set results_unlocked = unlocked where event_slug = slug;
+end;
+$$;
+
 -- Record a right/wrong ruling on one person's guess for one chip.
 create or replace function chip_judge(
-  slug text, submission uuid, chip int, is_correct boolean,
+  slug text, submission uuid, chip int, is_correct boolean, pw text,
   note text default null, judge text default 'host'
 )
 returns void
@@ -194,19 +276,23 @@ security definer
 set search_path = public
 as $$
 begin
+  perform chip_require_host(slug, pw);
+
   insert into chip_judgments (event_slug, submission_id, chip_number, correct, note, judged_by, judged_at)
   values (slug, submission, chip, is_correct, note, coalesce(judge, 'host'), now())
   on conflict (submission_id, chip_number) do update
-    set correct = excluded.correct,
-        note    = excluded.note,
+    set correct   = excluded.correct,
+        note      = excluded.note,
         judged_by = excluded.judged_by,
         judged_at = now();
 end;
 $$;
 
-grant execute on function chip_submit(text, text, jsonb)      to anon, authenticated;
-grant execute on function chip_set_answers(text, jsonb)        to anon, authenticated;
-grant execute on function chip_judge(text, uuid, int, boolean, text, text) to anon, authenticated;
+grant execute on function chip_submit(text, text, jsonb)                       to anon, authenticated;
+grant execute on function chip_set_answers(text, jsonb, text)                  to anon, authenticated;
+grant execute on function chip_set_event(text, text, int, text)                to anon, authenticated;
+grant execute on function chip_set_lock(text, boolean, text)                   to anon, authenticated;
+grant execute on function chip_judge(text, uuid, int, boolean, text, text, text) to anon, authenticated;
 
 -- ================================================================ roster
 -- The host needs to know who has turned a sheet in ("still waiting on Mariah")
@@ -234,4 +320,9 @@ on conflict (event_slug) do nothing;
 
 insert into chip_answers (event_slug, answers)
 values ('default', '[]'::jsonb)
+on conflict (event_slug) do nothing;
+
+-- Host password. Change it here (or with an UPDATE) — never in the frontend.
+insert into chip_secrets (event_slug, host_password)
+values ('default', 'qwerty')
 on conflict (event_slug) do nothing;

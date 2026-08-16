@@ -1,14 +1,19 @@
 /* Chip Challenge — host controls.
  *
- * Deliberately unauthenticated: this is a dinner party, and a login would mean
- * a real auth flow for one person. The protection that matters is in the
- * database, not this page — while results are locked, RLS will not return the
- * answer key or anyone's guesses to the public key, so finding this page early
- * gains a snoop nothing except the ability to be annoying.
+ * The password is never in this file. The page collects it, the database
+ * verifies it (chip_check_host), and every privileged call carries it so the
+ * server re-checks on each action. Skipping this UI with devtools gains a guest
+ * nothing: chip_set_lock / chip_set_answers / chip_judge all refuse without it,
+ * and chip_config has no direct write policy at all.
  */
 
 const HOST_KEY = 'chip-challenge:host';
+const PW_KEY = `chip-challenge:${EVENT}:hostpw`;
+
 let cfg;
+let hostPw = null;
+
+const storedPw = () => { try { return localStorage.getItem(PW_KEY); } catch { return null; } };
 
 function banner(kind, msg) {
   const b = el('#banner');
@@ -23,6 +28,45 @@ function flash(text) {
   pill.classList.add('show');
   clearTimeout(pillTimer);
   pillTimer = setTimeout(() => pill.classList.remove('show'), 1400);
+}
+
+/* If the password was changed out from under us, drop back to the gate rather
+   than leaving buttons that silently fail. */
+function handleError(err, what) {
+  if (/host password/i.test(err.message)) {
+    forgetPw();
+    banner('error', 'That password is no longer accepted. Enter it again.');
+    showGate();
+    return;
+  }
+  banner('error', `${what}: ${err.message}`);
+}
+
+/* ------------------------------------------------------------------ gate */
+
+function showGate() {
+  el('#gate').hidden = false;
+  el('#host-only').hidden = true;
+  el('#sub').textContent = 'Locked';
+  el('#gate-input').focus();
+}
+
+function forgetPw() {
+  hostPw = null;
+  try { localStorage.removeItem(PW_KEY); localStorage.removeItem(HOST_KEY); } catch { /* ignore */ }
+}
+
+async function tryPassword(pw) {
+  const ok = await sb('/rpc/chip_check_host', { method: 'POST', body: { slug: EVENT, pw } });
+  return ok === true;
+}
+
+async function enterHost(pw) {
+  hostPw = pw;
+  try { localStorage.setItem(PW_KEY, pw); } catch { /* private mode: retype each visit */ }
+  el('#gate').hidden = true;
+  el('#host-only').hidden = false;
+  await paintAll();
 }
 
 /* ------------------------------------------------------------------ answer key */
@@ -44,41 +88,12 @@ async function saveAnswers() {
     await sb('/rpc/chip_set_answers', {
       method: 'POST',
       prefer: 'return=minimal',
-      body: { slug: EVENT, answers },
+      body: { slug: EVENT, answers, pw: hostPw },
     });
     flash('Answer key saved');
     banner('ok', 'Answer key saved. Guests still can’t see it until you unlock.');
   } catch (err) {
-    banner('error', 'Could not save the answer key: ' + err.message);
-  } finally {
-    btn.disabled = false;
-  }
-}
-
-/* ------------------------------------------------------------------ event */
-
-async function saveEvent() {
-  const name = el('#event-name-input').value.trim() || 'Chip Challenge';
-  let count = parseInt(el('#chip-count-input').value, 10);
-  if (!Number.isFinite(count) || count < 1 || count > 30) {
-    banner('error', 'Chip count needs to be a number between 1 and 30.');
-    return;
-  }
-  const btn = el('#save-event-btn');
-  btn.disabled = true;
-  try {
-    await sb(`/chip_config?event_slug=eq.${encodeURIComponent(EVENT)}`, {
-      method: 'PATCH',
-      prefer: 'return=minimal',
-      body: { event_name: name, chip_count: count },
-    });
-    cfg.event_name = name;
-    cfg.chip_count = count;
-    buildAnswerRows(count, await currentAnswers());
-    flash('Event saved');
-    banner('ok', `Saved — ${count} chips.`);
-  } catch (err) {
-    banner('error', 'Could not save: ' + err.message);
+    handleError(err, 'Could not save the answer key');
   } finally {
     btn.disabled = false;
   }
@@ -94,16 +109,45 @@ async function currentAnswers() {
   }
 }
 
+/* ------------------------------------------------------------------ event */
+
+async function saveEvent() {
+  const name = el('#event-name-input').value.trim() || 'Chip Challenge';
+  const count = parseInt(el('#chip-count-input').value, 10);
+  if (!Number.isFinite(count) || count < 1 || count > 30) {
+    banner('error', 'Chip count needs to be a number between 1 and 30.');
+    return;
+  }
+  const btn = el('#save-event-btn');
+  btn.disabled = true;
+  try {
+    await sb('/rpc/chip_set_event', {
+      method: 'POST',
+      prefer: 'return=minimal',
+      body: { slug: EVENT, name, count, pw: hostPw },
+    });
+    cfg.event_name = name;
+    cfg.chip_count = count;
+    buildAnswerRows(count, await currentAnswers());
+    flash('Event saved');
+    banner('ok', `Saved — ${count} chips.`);
+  } catch (err) {
+    handleError(err, 'Could not save');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 /* ------------------------------------------------------------------ lock */
 
 async function setLocked(unlocked) {
   const btn = unlocked ? el('#unlock-btn') : el('#lock-btn');
   btn.disabled = true;
   try {
-    await sb(`/chip_config?event_slug=eq.${encodeURIComponent(EVENT)}`, {
-      method: 'PATCH',
+    await sb('/rpc/chip_set_lock', {
+      method: 'POST',
       prefer: 'return=minimal',
-      body: { results_unlocked: unlocked },
+      body: { slug: EVENT, unlocked, pw: hostPw },
     });
     cfg.results_unlocked = unlocked;
     paintLock();
@@ -113,7 +157,7 @@ async function setLocked(unlocked) {
       : 'Results are locked again.');
     if (unlocked) buildAnswerRows(cfg.chip_count, await currentAnswers());
   } catch (err) {
-    banner('error', 'Could not change that: ' + err.message);
+    handleError(err, 'Could not change that');
   } finally {
     btn.disabled = false;
   }
@@ -153,6 +197,21 @@ function paintHostMode() {
   el('#hostmode-btn').textContent = on ? 'Host mode is ON — turn off' : 'Turn host mode on';
 }
 
+/* ------------------------------------------------------------------ paint */
+
+async function paintAll() {
+  el('#event-name-input').value = cfg.event_name || 'Chip Challenge';
+  el('#chip-count-input').value = cfg.chip_count || DEFAULT_CHIP_COUNT;
+  buildAnswerRows(cfg.chip_count, await currentAnswers());
+  paintLock();
+  paintHostMode();
+  loadRoster();
+
+  if (!cfg.results_unlocked) {
+    banner('info', 'Results are locked, so the answer boxes start blank even if you already saved a key — the database hides it from this page too. Retyping and saving overwrites it.');
+  }
+}
+
 /* ------------------------------------------------------------------ boot */
 
 (async function init() {
@@ -177,16 +236,28 @@ function paintHostMode() {
     return;
   }
 
-  el('#event-name-input').value = cfg.event_name || 'Chip Challenge';
-  el('#chip-count-input').value = cfg.chip_count || DEFAULT_CHIP_COUNT;
-  buildAnswerRows(cfg.chip_count, await currentAnswers());
-  paintLock();
-  paintHostMode();
-  loadRoster();
-
-  if (!cfg.results_unlocked) {
-    banner('info', 'Results are locked, so the boxes below start blank even if you already saved a key — the database hides it from this page too. Retyping and saving overwrites it.');
-  }
+  el('#gate-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const pw = el('#gate-input').value;
+    const btn = el('#gate-btn');
+    btn.disabled = true;
+    btn.textContent = 'Checking…';
+    try {
+      if (await tryPassword(pw)) {
+        banner('', '');
+        el('#gate-input').value = '';
+        await enterHost(pw);
+      } else {
+        banner('error', 'Wrong password.');
+        el('#gate-input').select();
+      }
+    } catch (err) {
+      banner('error', 'Could not check that: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Unlock host controls';
+    }
+  });
 
   el('#save-answers-btn').addEventListener('click', saveAnswers);
   el('#save-event-btn').addEventListener('click', saveEvent);
@@ -201,4 +272,18 @@ function paintHostMode() {
     paintHostMode();
     flash(on ? 'Host mode off' : 'Host mode on');
   });
+  el('#signout-btn').addEventListener('click', () => {
+    forgetPw();
+    banner('info', 'Password forgotten on this device.');
+    showGate();
+  });
+
+  /* Remembered from last time? Re-verify rather than trusting localStorage. */
+  const saved = storedPw();
+  if (saved && await tryPassword(saved).catch(() => false)) {
+    await enterHost(saved);
+  } else {
+    if (saved) forgetPw();
+    showGate();
+  }
 })();

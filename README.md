@@ -30,9 +30,26 @@ database, not in the UI. While it's `false`, RLS refuses to return the answer ke
 or *anybody's* submissions to the public key — a guest who opens devtools sees
 empty arrays. The host flips it from the admin page when the tasting is done.
 
-The admin page has no password. That's deliberate: a login for one person isn't
-worth it, and the thing actually worth protecting (the answers) is protected by
-the database regardless of who opens `admin.html`.
+## Host password
+
+`admin.html` is linked from the guest pages, so it's gated by a password — and
+the gate is real, not a UI curtain:
+
+- The password lives in `chip_secrets`, which has RLS on and **no policy at all**.
+  The public key cannot read it with any query.
+- It is never shipped to the browser. The page collects it and the database
+  verifies it (`chip_check_host`).
+- Every privileged action re-checks it server-side: `chip_set_lock`,
+  `chip_set_answers`, `chip_set_event`, `chip_judge`. `chip_config` has no
+  direct write policy, so nobody can flip `results_unlocked` by other means.
+
+Skipping the prompt with devtools therefore gains a guest nothing.
+
+Change it with:
+
+```sql
+update chip_secrets set host_password = 'something-else' where event_slug = 'default';
+```
 
 ## Scoring the guesses
 
@@ -64,8 +81,10 @@ psql "$(cat ~/.citybuilder_db_url)" -c "
   order by s.player_name, (e->>'chip')::int;"
 
 # 2. write a ruling for each one Claude judges close enough
+#    (the host password is pulled from chip_secrets rather than typed here)
 psql "$(cat ~/.citybuilder_db_url)" -c "
   select chip_judge('default', '<submission-uuid>'::uuid, 3, true,
+                    (select host_password from chip_secrets where event_slug='default'),
                     'Called it vinegar without the salt — close enough.', 'claude');"
 ```
 
@@ -83,10 +102,11 @@ psql "$(cat ~/.citybuilder_db_url)" -f schema.sql
 
 | Table | Read | Write |
 |---|---|---|
-| `chip_config` | public | public (event name, chip count, unlock flag) |
-| `chip_answers` | **only when unlocked** | `chip_set_answers()` |
-| `chip_submissions` | **only when unlocked** | `chip_submit()` |
-| `chip_judgments` | **only when unlocked** | `chip_judge()` |
+| `chip_config` | public | `chip_set_event()`, `chip_set_lock()` — host password |
+| `chip_answers` | **only when unlocked** | `chip_set_answers()` — host password |
+| `chip_submissions` | **only when unlocked** | `chip_submit()` — open to guests |
+| `chip_judgments` | **only when unlocked** | `chip_judge()` — host password |
+| `chip_secrets` | **nobody** | SQL only |
 
 Writes go through `SECURITY DEFINER` functions rather than table policies because
 an upsert has to read the row it might replace — and while the event is locked,

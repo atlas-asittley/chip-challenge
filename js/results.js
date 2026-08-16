@@ -6,8 +6,19 @@
  */
 
 const HOST_KEY = 'chip-challenge:host';
+const PW_KEY = `chip-challenge:${EVENT}:hostpw`;
+
+/* Host mode only decides whether the flip buttons are drawn. The password is
+   what actually authorizes the change, and the database checks it. */
 const isHost = () => localStorage.getItem(HOST_KEY) === '1'
   || new URLSearchParams(location.search).get('host') === '1';
+
+function hostPassword() {
+  let pw = null;
+  try { pw = localStorage.getItem(PW_KEY); } catch { /* blocked storage */ }
+  if (!pw) pw = prompt('Host password:');
+  return pw;
+}
 
 let cfg, answers = [], submissions = [], judgeMap = new Map();
 
@@ -203,6 +214,9 @@ function wireOverrides() {
       const sub = submissions.find((s) => s.id === subId);
       const now = (verdict(sub, chip) || {}).correct;
 
+      const pw = hostPassword();
+      if (!pw) return;
+
       btn.disabled = true;
       try {
         await sb('/rpc/chip_judge', {
@@ -213,10 +227,12 @@ function wireOverrides() {
             submission: subId,
             chip,
             is_correct: !now,
+            pw,
             note: 'Host call at the table.',
             judge: 'host',
           },
         });
+        try { localStorage.setItem(PW_KEY, pw); } catch { /* ignore */ }
         judgeMap.set(`${subId}:${chip}`, {
           submission_id: subId, chip_number: chip, correct: !now,
           note: 'Host call at the table.', judged_by: 'host',
@@ -225,7 +241,13 @@ function wireOverrides() {
         render();
         els('details.chip-detail').forEach((d, i) => { d.open = open[i]; });
       } catch (err) {
-        alert('Could not save that: ' + err.message);
+        /* Wrong password? Forget it so the next tap asks again. */
+        if (/host password/i.test(err.message)) {
+          try { localStorage.removeItem(PW_KEY); } catch { /* ignore */ }
+          alert('Wrong host password.');
+        } else {
+          alert('Could not save that: ' + err.message);
+        }
         btn.disabled = false;
       }
     });
