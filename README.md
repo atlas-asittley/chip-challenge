@@ -160,3 +160,12 @@ tail -f ~/chip-challenge/watcher/watcher.log
 
 The unit file lives at `~/.config/systemd/user/chip-judge-watcher.service`. It is
 enabled, and the user has lingering on, so it survives logout and reboot.
+
+## Run of show
+
+`guide.html` (linked from the admin nav) is the host's checklist: 24 steps from
+buying the chips through the post-reveal arguing, in order. Ticks are stored in
+localStorage per event, so it survives the phone locking mid-party.
+
+It covers the two things that actually go wrong at these: writing down which bag
+went in which numbered bowl, and guests not realising they have to press Submit.

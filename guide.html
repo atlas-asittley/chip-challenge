@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chip Challenge — Run of Show</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#d2691e">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥔</text></svg>">
+<link rel="stylesheet" href="css/style.css?v=202608161409">
+</head>
+<body>
+
+<header class="hero">
+  <span class="chip-emoji">📋</span>
+  <h1>Run of show</h1>
+  <p>Every step, in order. Tick them off as you go — it remembers.</p>
+</header>
+
+<main class="wrap">
+
+  <nav class="tabs">
+    <a href="admin.html" id="admin-link">Host</a>
+    <a href="guide.html" class="active">Run of show</a>
+  </nav>
+
+  <div class="progress-line"><span id="progress-fill"></span></div>
+  <p class="hint" id="progress-text" style="text-align:center;margin-bottom:1rem"></p>
+
+  <section class="card">
+    <h2>🛒 Before anyone arrives</h2>
+    <ol class="steps" id="phase-prep">
+      <li data-step="prep-1">
+        <strong>Buy 8 different chips.</strong>
+        <span>Different enough to tell apart. Wildly obscure flavors make for a
+        frustrating game — one or two curveballs is plenty.</span>
+      </li>
+      <li data-step="prep-2">
+        <strong>Number 8 bowls 1 through 8, and write down which bag went in which.</strong>
+        <span>This is the step that ruins the night if you get it wrong. Do it
+        somewhere the guests won't wander past, and keep the bags out of sight —
+        recycling included.</span>
+      </li>
+      <li data-step="prep-3">
+        <strong>Open the Host page and enter your password.</strong>
+        <span>Bookmark it now so you're not hunting for the link later.</span>
+      </li>
+      <li data-step="prep-4">
+        <strong>Set the event name and the number of chips → Save event.</strong>
+        <span>Do this <em>before</em> you send anyone the link — it decides how
+        many rows their sheet has.</span>
+      </li>
+      <li data-step="prep-5">
+        <strong>Type the 8 real flavors into the answer key → Save answer key.</strong>
+        <span>In bowl order: box 1 is bowl 1. Guests cannot read these — the
+        database refuses to hand them over until you reveal.</span>
+      </li>
+      <li data-step="prep-6">
+        <strong>Check that Reveal says “Results are locked.”</strong>
+        <span>If it says OPEN, hit “Lock again” before anyone opens the link.</span>
+      </li>
+      <li data-step="prep-7">
+        <strong>Copy the guest link and have it ready to paste.</strong>
+        <span>That link only ever shows the sheet. It doesn't lead to the answers.</span>
+      </li>
+    </ol>
+    <p class="hint">
+      ⚠️ Coming back to the answer key later? The boxes will look <strong>blank
+      even though it saved</strong> — while results are locked the answers are
+      hidden from you too. That's expected. Retyping and saving overwrites them.
+    </p>
+  </section>
+
+  <section class="card">
+    <h2>👋 As people arrive</h2>
+    <ol class="steps" id="phase-arrive">
+      <li data-step="arrive-1">
+        <strong>Text everyone the guest link.</strong>
+      </li>
+      <li data-step="arrive-2">
+        <strong>Say the three rules out loud.</strong>
+        <span>Put your real name at the top · no shouting out guesses ·
+        <em>press Submit when you're done</em> — that last one is the step people miss.</span>
+      </li>
+      <li data-step="arrive-3">
+        <strong>Reassure them their answers can't get lost.</strong>
+        <span>Every keystroke saves on their own phone. Closing the tab, a dead
+        battery, a dropped phone — they can reopen the link and pick up where
+        they left off.</span>
+      </li>
+      <li data-step="arrive-4">
+        <strong>Fill out a sheet yourself, if you're playing.</strong>
+        <span>Same guest link as everyone else. (You already know the answers,
+        so maybe don't.)</span>
+      </li>
+    </ol>
+  </section>
+
+  <section class="card">
+    <h2>🥔 The tasting</h2>
+    <ol class="steps" id="phase-taste">
+      <li data-step="taste-1">
+        <strong>Go one bowl at a time, in order, and wait for everyone.</strong>
+        <span>Say the number each time. Half the mistakes at these things are
+        people rating the wrong row.</span>
+      </li>
+      <li data-step="taste-2">
+        <strong>Put water on the table.</strong>
+        <span>By chip five everything tastes like salt.</span>
+      </li>
+      <li data-step="taste-3">
+        <strong>Check the roster on the Host page → Refresh.</strong>
+        <span>Names and times only — you can't see anyone's answers, and neither
+        can they. It doesn't update on its own, so tap Refresh.</span>
+      </li>
+      <li data-step="taste-4">
+        <strong>Chase anyone who hasn't submitted.</strong>
+        <span>If they're missing from the roster, their sheet is still sitting on
+        their phone. They can change answers and resubmit as often as they like —
+        same name keeps it as one sheet.</span>
+      </li>
+    </ol>
+  </section>
+
+  <section class="card">
+    <h2>🏆 The reveal</h2>
+    <ol class="steps" id="phase-reveal">
+      <li data-step="reveal-1">
+        <strong>When everyone's in, press “Score guesses &amp; reveal.”</strong>
+        <span>Get everyone looking at the Results tab first — it's a better moment
+        with an audience.</span>
+      </li>
+      <li data-step="reveal-2">
+        <strong>Wait about a minute.</strong>
+        <span>Everyone sees “Claude is scoring everyone's guesses,” then the board
+        opens by itself. Nobody needs to refresh.</span>
+      </li>
+      <li data-step="reveal-3">
+        <strong>If it's still going after 3 minutes, press “Reveal now, skip scoring.”</strong>
+        <span>Your page will warn you if it's stuck. The results still open, just
+        scored by plain text matching instead.</span>
+      </li>
+      <li data-step="reveal-4">
+        <strong>Read the answer key out loud, bowl by bowl.</strong>
+        <span>It's the top card on the results page. Do it before anyone scrolls
+        to the leaderboards.</span>
+      </li>
+      <li data-step="reveal-5">
+        <strong>Announce the three winners.</strong>
+        <span>Best chip, most divisive chip, and who guessed best — all on the board.</span>
+      </li>
+    </ol>
+  </section>
+
+  <section class="card">
+    <h2>🧹 Afterwards</h2>
+    <ol class="steps" id="phase-after">
+      <li data-step="after-1">
+        <strong>Someone disagrees with a call? Overrule it.</strong>
+        <span>Host page → “Turn host mode on,” then reload the results. Every guess
+        gets a <em>flip</em> button. Changes show up for everyone.</span>
+      </li>
+      <li data-step="after-2">
+        <strong>Late arrival submits after the reveal? Press “Re-score guesses.”</strong>
+        <span>It judges the new sheet without hiding the board.</span>
+      </li>
+      <li data-step="after-3">
+        <strong>Show the “Who rated what” grid.</strong>
+        <span>The bottom card. Everyone's rating for every chip side by side —
+        this is usually where the arguing starts.</span>
+      </li>
+      <li data-step="after-4">
+        <strong>Leave the link up.</strong>
+        <span>People will want to look again tomorrow. Nothing expires.</span>
+      </li>
+    </ol>
+  </section>
+
+  <button type="button" class="btn ghost" id="reset-btn">Clear all the checkmarks</button>
+
+</main>
+
+<div class="saved-pill" id="saved-pill">Saved</div>
+
+<footer class="foot"><p>🥔</p></footer>
+
+<script src="js/config.js?v=202608161409"></script>
+<script src="js/guide.js?v=202608161409"></script>
+</body>
+</html>

@@ -168,7 +168,12 @@ function paintLock() {
     && (cfg.judging_state === 'requested' || cfg.judging_state === 'running');
 
   el('#lock-state').textContent = cfg.results_unlocked ? 'OPEN' : scoring ? 'being scored' : 'locked';
-  el('#judge-btn').style.display = cfg.results_unlocked || scoring ? 'none' : '';
+  el('#judge-btn').style.display = scoring ? 'none' : '';
+  /* Re-scoring an open board is for late sheets — it doesn't hide anything. */
+  el('#judge-btn').textContent = cfg.results_unlocked
+    ? 'Re-score guesses (for late sheets)'
+    : 'Score guesses & reveal';
+  el('#judge-btn').className = cfg.results_unlocked ? 'btn ghost' : 'btn';
   el('#unlock-btn').style.display = cfg.results_unlocked ? 'none' : '';
   el('#unlock-btn').textContent = scoring ? 'Stop waiting, reveal now' : 'Reveal now, skip scoring';
   el('#lock-btn').style.display = cfg.results_unlocked ? '' : 'none';
@@ -224,10 +229,12 @@ async function requestJudging() {
       prefer: 'return=minimal',
       body: { slug: EVENT, pw: hostPw },
     });
+    const wasOpen = cfg.results_unlocked;
     cfg.judging_state = 'requested';
-    cfg.results_unlocked = false;
     paintLock();
-    banner('info', 'Scoring started. This page opens the results by itself when Claude is done.');
+    banner('info', wasOpen
+      ? 'Re-scoring. The board updates itself when Claude is done.'
+      : 'Scoring started. This page opens the results by itself when Claude is done.');
     watchJudging();
   } catch (err) {
     handleError(err, 'Could not start scoring');
@@ -285,6 +292,10 @@ async function paintAll() {
 /* ------------------------------------------------------------------ boot */
 
 (async function init() {
+  if (EVENT !== 'default') {
+    el('#guide-link').href = `guide.html?event=${encodeURIComponent(EVENT)}`;
+  }
+
   const base = location.href.replace(/admin\.html.*$/, 'index.html');
   el('#share-url').value = EVENT === 'default' ? base : `${base}?event=${encodeURIComponent(EVENT)}`;
 

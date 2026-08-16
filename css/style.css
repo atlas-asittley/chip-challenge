@@ -409,3 +409,77 @@ footer.foot a { color: var(--ink-soft); }
   font-size: .75rem;
   cursor: pointer;
 }
+
+/* ------------------------------------------------------------------ run of show */
+
+.progress-line {
+  height: 6px;
+  background: var(--bg-sunk);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: .4rem;
+}
+.progress-line span {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--accent);
+  transition: width .25s ease;
+}
+
+ol.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: step;
+}
+
+ol.steps li {
+  position: relative;
+  padding: .7rem 0 .7rem 2.4rem;
+  border-top: 1px solid var(--line);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+ol.steps li:first-child { border-top: 0; }
+
+/* Empty box that fills in when tapped. */
+ol.steps li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: .78rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 2px solid var(--line);
+  border-radius: 7px;
+  background: var(--bg-sunk);
+  transition: background .12s ease, border-color .12s ease;
+}
+ol.steps li::after {
+  content: '✓';
+  position: absolute;
+  left: .32rem;
+  top: .72rem;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #fff;
+  opacity: 0;
+  transition: opacity .12s ease;
+}
+ol.steps li.done::before { background: var(--accent); border-color: var(--accent); }
+ol.steps li.done::after  { opacity: 1; }
+
+ol.steps li strong { display: block; font-size: .95rem; }
+ol.steps li span {
+  display: block;
+  margin-top: .2rem;
+  font-size: .85rem;
+  color: var(--ink-soft);
+}
+ol.steps li.done strong,
+ol.steps li.done span { opacity: .5; }
+ol.steps li.done strong { text-decoration: line-through; }
+
+ol.steps li:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }

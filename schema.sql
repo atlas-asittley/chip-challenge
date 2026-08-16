@@ -304,11 +304,13 @@ begin
     raise exception 'Set the answer key first — there is nothing to judge against';
   end if;
 
+  -- Locked board: stay locked, so nobody sees a half-judged reveal.
+  -- Already-open board (a re-score after a late sheet): leave it open, since
+  -- hiding results people are reading would be worse than a brief mixed state.
   update chip_config
   set judging_state = 'requested',
       judging_requested_at = now(),
-      judging_note = null,
-      results_unlocked = false
+      judging_note = null
   where event_slug = slug;
 end;
 $$;
