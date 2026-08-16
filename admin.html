@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chip Challenge — Host</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#d2691e">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥔</text></svg>">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="hero">
+  <span class="chip-emoji">🧑‍🍳</span>
+  <h1>Host controls</h1>
+  <p id="sub">Loading…</p>
+</header>
+
+<main class="wrap">
+
+  <nav class="tabs">
+    <a href="index.html">My sheet</a>
+    <a href="results.html">Results</a>
+    <a href="admin.html" class="active">Host</a>
+  </nav>
+
+  <div id="banner" class="banner"></div>
+
+  <section class="card">
+    <h2>Share this with everyone</h2>
+    <input type="text" id="share-url" readonly>
+    <button type="button" class="btn secondary" id="copy-btn" style="margin-top:.6rem">Copy link</button>
+  </section>
+
+  <section class="card">
+    <h2>Who's turned in a sheet</h2>
+    <div id="roster"><p class="hint">Checking…</p></div>
+    <button type="button" class="btn ghost" id="refresh-btn" style="margin-top:.6rem">Refresh</button>
+  </section>
+
+  <section class="card">
+    <h2>The event</h2>
+    <label class="field" for="event-name-input">Name</label>
+    <input type="text" id="event-name-input" maxlength="60" placeholder="Chip Challenge">
+    <label class="field" for="chip-count-input" style="margin-top:.75rem">How many chips</label>
+    <input type="text" id="chip-count-input" inputmode="numeric" maxlength="2">
+    <p class="hint">Change this before anyone starts — it sets how many rows the sheet has.</p>
+    <button type="button" class="btn secondary" id="save-event-btn" style="margin-top:.75rem">Save event</button>
+  </section>
+
+  <section class="card">
+    <h2>Answer key</h2>
+    <p class="hint" style="margin-bottom:.75rem">
+      The real flavors, in order. Guests <em>cannot</em> read these until you unlock
+      results — the database refuses to hand them over.
+    </p>
+    <div id="answer-rows"></div>
+    <button type="button" class="btn secondary" id="save-answers-btn" style="margin-top:.5rem">Save answer key</button>
+  </section>
+
+  <section class="card">
+    <h2>Reveal</h2>
+    <div class="switch-row">
+      <div>
+        <div class="switch-label">Results are <span id="lock-state">locked</span></div>
+        <div class="switch-sub">Unlocking shows everyone the answers, all guesses, and the leaderboards.</div>
+      </div>
+    </div>
+    <button type="button" class="btn" id="unlock-btn">Unlock results</button>
+    <button type="button" class="btn ghost" id="lock-btn">Lock again</button>
+  </section>
+
+  <section class="card">
+    <h2>Host mode on this device</h2>
+    <p class="hint">Lets you flip any right/wrong call from the results page. Only affects this phone.</p>
+    <button type="button" class="btn ghost" id="hostmode-btn">Turn host mode on</button>
+  </section>
+
+</main>
+
+<div class="saved-pill" id="saved-pill">Saved</div>
+
+<footer class="foot"><p>Chip Challenge</p></footer>
+
+<script src="js/config.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>

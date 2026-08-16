@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chip Challenge — Blind Taste Test</title>
+<meta name="description" content="Guess the flavor, rank the chip. A blind taste test scorecard.">
+<meta name="theme-color" content="#d2691e">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥔</text></svg>">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="hero">
+  <span class="chip-emoji">🥔</span>
+  <h1 id="event-name">Chip Challenge</h1>
+  <p id="tagline">No labels. Guess the flavor, rate the chip.</p>
+</header>
+
+<main class="wrap">
+
+  <nav class="tabs">
+    <a href="index.html" class="active">My sheet</a>
+    <a href="results.html" id="results-link">Results</a>
+  </nav>
+
+  <div id="banner" class="banner"></div>
+
+  <form id="sheet" autocomplete="off">
+
+    <section class="card">
+      <label class="field" for="player-name">Your name</label>
+      <input type="text" id="player-name" name="player-name" placeholder="e.g. Libby"
+             maxlength="40" autocapitalize="words" required>
+      <p class="hint">Used to put your sheet on the board. Use the same name if you come back to edit.</p>
+    </section>
+
+    <section class="card" id="chips">
+      <h2>The chips</h2>
+      <!-- rows injected by js/form.js -->
+    </section>
+
+    <button type="submit" class="btn" id="submit-btn">Submit my sheet</button>
+    <button type="button" class="btn ghost" id="clear-btn">Clear my sheet</button>
+
+    <p class="hint" style="text-align:center;margin-top:.75rem">
+      Your answers save on this device as you type — closing the tab won't lose them.
+    </p>
+  </form>
+
+</main>
+
+<div class="saved-pill" id="saved-pill">Saved</div>
+
+<footer class="foot">
+  <p>Host? <a href="admin.html">Admin</a></p>
+</footer>
+
+<script src="js/config.js"></script>
+<script src="js/form.js"></script>
+</body>
+</html>
