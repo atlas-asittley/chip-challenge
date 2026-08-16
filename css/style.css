@@ -2,33 +2,40 @@
    most people will fill this in one-handed, holding a chip in the other. */
 
 :root {
-  --bg:        #fdf8f0;
-  --bg-card:   #ffffff;
-  --bg-sunk:   #f5eee2;
-  --ink:       #2c2118;
-  --ink-soft:  #7a6a58;
-  --line:      #e6dac6;
-  --accent:    #d2691e;   /* paprika */
-  --gold:      #e0a800;
-  --good:      #2e7d4f;
-  --bad:       #b3402f;
-  --shadow:    0 1px 2px rgba(44,33,24,.06), 0 4px 16px rgba(44,33,24,.06);
-  --radius:    14px;
+  --bg:        #fff6e6;
+  --bg-card:   #fffdf9;
+  --bg-sunk:   #ffeed4;
+  --ink:       #33231a;
+  --ink-soft:  #8a7460;
+  --line:      #f0d9b4;
+  --accent:    #ef6c1f;   /* nacho orange */
+  --accent-2:  #ff9f1c;   /* cheese dust */
+  --grape:     #8b5cf6;   /* soda purple */
+  --gold:      #f2b705;
+  --good:      #2f9e5f;
+  --bad:       #e04b32;
+  --shadow:    0 2px 0 var(--line), 0 6px 18px rgba(120,72,20,.10);
+  --shadow-pop:0 4px 0 var(--line), 0 10px 24px rgba(120,72,20,.16);
+  --radius:    22px;
+  --radius-sm: 14px;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg:        #17130f;
-    --bg-card:   #221c16;
-    --bg-sunk:   #2c241c;
-    --ink:       #f2e9dc;
-    --ink-soft:  #a8988a;
-    --line:      #3a3027;
-    --accent:    #f08b3a;
-    --gold:      #f5c542;
-    --good:      #5cbb85;
-    --bad:       #e8735c;
-    --shadow:    0 1px 2px rgba(0,0,0,.3), 0 4px 18px rgba(0,0,0,.35);
+    --bg:        #1a1410;
+    --bg-card:   #261e18;
+    --bg-sunk:   #33281f;
+    --ink:       #fdf0e0;
+    --ink-soft:  #b6a293;
+    --line:      #46372b;
+    --accent:    #ff8f43;
+    --accent-2:  #ffb454;
+    --grape:     #a78bfa;
+    --gold:      #ffd166;
+    --good:      #5fd18f;
+    --bad:       #ff7a5f;
+    --shadow:    0 2px 0 var(--line), 0 6px 18px rgba(0,0,0,.4);
+    --shadow-pop:0 4px 0 var(--line), 0 10px 24px rgba(0,0,0,.5);
   }
 }
 
@@ -37,9 +44,16 @@
 body {
   margin: 0;
   padding: 0 0 5rem;
-  background: var(--bg);
+  background-color: var(--bg);
+  /* Scattered crumbs. Cheap, tiles forever, no image request. */
+  background-image:
+    radial-gradient(circle at 12% 22%, color-mix(in srgb, var(--accent) 12%, transparent) 0 3px, transparent 4px),
+    radial-gradient(circle at 68% 8%,  color-mix(in srgb, var(--gold)   16%, transparent) 0 2px, transparent 3px),
+    radial-gradient(circle at 84% 61%, color-mix(in srgb, var(--accent) 10%, transparent) 0 4px, transparent 5px),
+    radial-gradient(circle at 33% 78%, color-mix(in srgb, var(--grape)  10%, transparent) 0 2px, transparent 3px);
+  background-size: 180px 180px, 140px 140px, 220px 220px, 160px 160px;
   color: var(--ink);
-  font: 16px/1.5 ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont,
+  font: 17px/1.55 ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont,
         "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
   -webkit-text-size-adjust: 100%;
 }
@@ -53,11 +67,27 @@ header.hero {
   text-align: center;
   padding: 2rem 1rem 1.25rem;
 }
-header.hero .chip-emoji { font-size: 2.75rem; line-height: 1; display: block; }
+header.hero .chip-emoji {
+  font-size: 3.2rem;
+  line-height: 1;
+  display: block;
+  animation: wobble 3.2s ease-in-out infinite;
+  transform-origin: 50% 80%;
+}
+@keyframes wobble {
+  0%, 100% { transform: rotate(-6deg) translateY(0); }
+  50%      { transform: rotate(6deg)  translateY(-6px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  header.hero .chip-emoji { animation: none; }
+}
 header.hero h1 {
   margin: .4rem 0 .25rem;
-  font-size: 1.9rem;
-  letter-spacing: -.02em;
+  font-size: 2.3rem;
+  font-weight: 900;
+  letter-spacing: -.03em;
+  color: var(--accent);
+  text-shadow: 0 2px 0 color-mix(in srgb, var(--accent) 25%, transparent);
 }
 header.hero p { margin: 0; color: var(--ink-soft); font-size: .95rem; }
 
@@ -65,14 +95,14 @@ header.hero p { margin: 0; color: var(--ink-soft); font-size: .95rem; }
 
 .card {
   background: var(--bg-card);
-  border: 1px solid var(--line);
+  border: 2px solid var(--line);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  padding: 1rem;
-  margin-bottom: 1rem;
+  padding: 1.1rem;
+  margin-bottom: 1.1rem;
 }
 
-.card h2 { margin: 0 0 .75rem; font-size: 1.05rem; }
+.card h2 { margin: 0 0 .75rem; font-size: 1.15rem; font-weight: 800; letter-spacing: -.01em; }
 
 /* ------------------------------------------------------------------ inputs */
 
@@ -85,8 +115,8 @@ input[type="password"] {
   font: inherit;
   color: var(--ink);
   background: var(--bg-sunk);
-  border: 1px solid var(--line);
-  border-radius: 10px;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-sm);
 }
 input[type="text"]:focus,
 input[type="password"]:focus {
@@ -111,16 +141,19 @@ input::placeholder { color: var(--ink-soft); opacity: .7; }
 }
 .chip-badge {
   flex: 0 0 auto;
-  width: 2rem; height: 2rem;
+  width: 2.3rem; height: 2.3rem;
   border-radius: 50%;
-  background: var(--accent);
+  background: linear-gradient(150deg, var(--accent-2), var(--accent));
   color: #fff;
-  font-weight: 700;
+  font-weight: 900;
   display: grid;
   place-items: center;
-  font-size: .95rem;
+  font-size: 1.05rem;
+  border: 2px solid var(--bg-card);
+  box-shadow: 0 0 0 2px var(--accent), 0 3px 8px rgba(120,72,20,.25);
+  transform: rotate(-7deg);
 }
-.chip-head .chip-title { font-weight: 700; }
+.chip-head .chip-title { font-weight: 800; font-size: 1.05rem; }
 
 .rank-label {
   display: flex;
@@ -148,16 +181,18 @@ input::placeholder { color: var(--ink-soft); opacity: .7; }
   font-variant-numeric: tabular-nums;
   color: var(--ink);
   background: var(--bg-sunk);
-  border: 1px solid var(--line);
-  border-radius: 9px;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: transform .06s ease, background .12s ease;
+  transition: transform .12s cubic-bezier(.34,1.56,.64,1), background .12s ease, box-shadow .12s ease;
 }
-.ranks button:active { transform: scale(.94); }
+.ranks button:active { transform: scale(.9); }
 .ranks button[aria-pressed="true"] {
-  background: var(--accent);
+  background: linear-gradient(150deg, var(--accent-2), var(--accent));
   border-color: var(--accent);
   color: #fff;
+  transform: scale(1.12) rotate(-3deg);
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--accent) 45%, transparent);
 }
 
 .scale-ends {
@@ -178,24 +213,33 @@ input::placeholder { color: var(--ink-soft); opacity: .7; }
   width: 100%;
   padding: .95rem 1rem;
   font: inherit;
-  font-weight: 700;
+  font-weight: 800;
+  font-size: 1.05rem;
   color: #fff;
-  background: var(--accent);
+  background: linear-gradient(150deg, var(--accent-2), var(--accent));
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--radius);
   cursor: pointer;
+  box-shadow: 0 4px 0 color-mix(in srgb, var(--accent) 70%, #000), 0 8px 18px rgba(120,72,20,.22);
+  transition: transform .1s ease, box-shadow .1s ease;
+}
+.btn:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--accent) 70%, #000), 0 4px 10px rgba(120,72,20,.2);
 }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
 .btn.secondary {
-  background: transparent;
+  background: var(--bg-card);
   color: var(--accent);
-  border: 1.5px solid var(--accent);
+  border: 2.5px solid var(--accent);
+  box-shadow: 0 4px 0 color-mix(in srgb, var(--accent) 35%, transparent);
 }
 .btn.ghost {
-  background: transparent;
+  background: var(--bg-card);
   color: var(--ink-soft);
-  border: 1px solid var(--line);
-  font-weight: 600;
+  border: 2px solid var(--line);
+  font-weight: 700;
+  box-shadow: 0 3px 0 var(--line);
 }
 .btn + .btn { margin-top: .6rem; }
 
@@ -203,6 +247,7 @@ input::placeholder { color: var(--ink-soft); opacity: .7; }
 
 .saved-pill {
   position: fixed;
+  border: 2px solid var(--accent);
   left: 50%;
   bottom: 1rem;
   transform: translateX(-50%) translateY(150%);
@@ -247,10 +292,11 @@ input::placeholder { color: var(--ink-soft); opacity: .7; }
 }
 .stat {
   background: var(--bg-card);
-  border: 1px solid var(--line);
+  border: 2px solid var(--line);
   border-radius: var(--radius);
-  padding: .8rem;
+  padding: .85rem .8rem;
   text-align: center;
+  box-shadow: var(--shadow);
 }
 .stat .n { font-size: 1.6rem; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .stat .k { font-size: .75rem; color: var(--ink-soft); text-transform: uppercase; letter-spacing: .04em; }
@@ -330,7 +376,8 @@ table.tbl td.num, table.tbl th.num { text-align: right; font-variant-numeric: ta
 
 .answer-line {
   background: var(--bg-sunk);
-  border-radius: 9px;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-sm);
   padding: .5rem .7rem;
   margin-bottom: .6rem;
   font-size: .92rem;
@@ -362,13 +409,20 @@ nav.tabs {
 nav.tabs a {
   text-decoration: none;
   color: var(--ink-soft);
-  border: 1px solid var(--line);
-  padding: .4rem .85rem;
+  background: var(--bg-card);
+  border: 2px solid var(--line);
+  padding: .4rem .95rem;
   border-radius: 999px;
-  font-size: .85rem;
-  font-weight: 600;
+  font-size: .88rem;
+  font-weight: 700;
+  box-shadow: 0 2px 0 var(--line);
 }
-nav.tabs a.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+nav.tabs a.active {
+  background: linear-gradient(150deg, var(--accent-2), var(--accent));
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 2px 0 color-mix(in srgb, var(--accent) 65%, #000);
+}
 
 footer.foot {
   text-align: center;
@@ -483,3 +537,63 @@ ol.steps li.done span { opacity: .5; }
 ol.steps li.done strong { text-decoration: line-through; }
 
 ol.steps li:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
+
+/* ------------------------------------------------------------------ flavor */
+
+/* The little running commentary next to a rating. */
+.quip {
+  display: block;
+  margin-top: .4rem;
+  font-size: .85rem;
+  font-weight: 700;
+  color: var(--accent);
+  min-height: 1.2em;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity .18s ease, transform .18s ease;
+}
+.quip.show { opacity: 1; transform: none; }
+
+.tagline { font-weight: 600; }
+
+/* Confetti on submit — a dozen absolutely-positioned crumbs, then gone. */
+.confetti {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 60;
+  overflow: hidden;
+}
+.confetti i {
+  position: absolute;
+  top: -5vh;
+  font-size: 1.5rem;
+  animation: fall linear forwards;
+}
+@keyframes fall {
+  0%   { transform: translateY(-10vh) rotate(0deg);    opacity: 1; }
+  100% { transform: translateY(110vh) rotate(720deg);  opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .confetti { display: none; } }
+
+/* Awards on the results board. */
+.award {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  padding: .6rem 0;
+  border-bottom: 2px dotted var(--line);
+}
+.award:last-child { border-bottom: 0; }
+.award .trophy { font-size: 1.8rem; line-height: 1; }
+.award .award-body { flex: 1; display: flex; flex-direction: column; gap: .05rem; }
+.award .award-name {
+  display: block;
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--ink-soft);
+  font-weight: 800;
+}
+.award .award-win { display: block; font-weight: 800; font-size: 1.05rem; line-height: 1.25; }
+.award .award-sub { display: block; font-size: .82rem; color: var(--ink-soft); }

@@ -69,12 +69,13 @@ function render() {
   const stats = nums.map((i) => chipStats(submissions, i)).filter((s) => s.votes);
 
   el('#sub').textContent = submissions.length === 1
-    ? '1 sheet in'
-    : `${submissions.length} sheets in`;
+    ? '1 brave soul'
+    : `${submissions.length} palates, judged`;
 
   if (!submissions.length) {
-    el('#content').innerHTML = `<div class="locked"><span class="lock-emoji">🍽️</span>
-      <p>Results are open, but nobody has submitted a sheet yet.</p></div>`;
+    el('#content').innerHTML = `<div class="locked"><span class="lock-emoji">🦗</span>
+      <p><strong>Results are open and nobody submitted a thing.</strong></p>
+      <p>Somebody go press the button on their sheet.</p></div>`;
     return;
   }
 
@@ -85,7 +86,7 @@ function render() {
     : [];
 
   el('#content').innerHTML = [
-    statStrip(byAvg, divisive, scored),
+    awardsCard(byAvg, divisive, scored),
     hasAnswers() ? answerKeyCard(nums) : pendingAnswersCard(),
     chipLeaderboard(byAvg),
     scored.length ? guessLeaderboard(scored, n) : '',
@@ -96,36 +97,49 @@ function render() {
   if (isHost() && hasAnswers()) wireOverrides();
 }
 
-function statStrip(byAvg, divisive, scored) {
+function awardsCard(byAvg, divisive, scored) {
   const win = byAvg[0];
-  const loser = byAvg[byAvg.length - 1];
-  const bestGuesser = scored[0];
-  return `<div class="stat-strip">
-    <div class="stat"><div class="n">${submissions.length}</div><div class="k">Tasters</div></div>
-    ${win ? `<div class="stat"><div class="n">#${win.chip}</div><div class="k">Best chip · ${win.avg}</div></div>` : ''}
-    ${loser && byAvg.length > 1 ? `<div class="stat"><div class="n">#${loser.chip}</div><div class="k">Worst · ${loser.avg}</div></div>` : ''}
-    ${divisive ? `<div class="stat"><div class="n">#${divisive.chip}</div><div class="k">Most divisive</div></div>` : ''}
-    ${bestGuesser ? `<div class="stat"><div class="n">${bestGuesser.score}/${cfg.chip_count}</div><div class="k">${escapeHtml(bestGuesser.sub.player_name)} leads</div></div>` : ''}
+  const loser = byAvg.length > 1 ? byAvg[byAvg.length - 1] : null;
+  const best = scored[0];
+  const worst = scored.length > 2 ? scored[scored.length - 1] : null;
+
+  const row = (a, winner, sub) => `<div class="award">
+    <span class="trophy">${a.trophy}</span>
+    <span class="award-body">
+      <span class="award-name">${a.name}</span>
+      <span class="award-win">${winner}</span>
+      <span class="award-sub">${sub}</span>
+    </span>
   </div>`;
+
+  const named = (n) => answerFor(n) ? `#${n} — ${escapeHtml(answerFor(n))}` : `Chip #${n}`;
+
+  return `<section class="card"><h2>🎖️ The envelope, please</h2>
+    ${win ? row(AWARDS.best, named(win.chip), `${AWARDS.best.sub} · ${win.avg}/10`) : ''}
+    ${loser ? row(AWARDS.worst, named(loser.chip), `${AWARDS.worst.sub} · ${loser.avg}/10`) : ''}
+    ${divisive ? row(AWARDS.divisive, named(divisive.chip), `${AWARDS.divisive.sub} · ±${divisive.spread}`) : ''}
+    ${best ? row(AWARDS.guesser, escapeHtml(best.sub.player_name), `${best.score} of ${cfg.chip_count} named correctly`) : ''}
+    ${worst && worst.score < best.score ? row(AWARDS.worstGuesser, escapeHtml(worst.sub.player_name), `${worst.score} of ${cfg.chip_count}. ${AWARDS.worstGuesser.sub}`) : ''}
+  </section>`;
 }
 
 function answerKeyCard(nums) {
-  return `<section class="card"><h2>What they actually were</h2>
+  return `<section class="card"><h2>🫣 What you were actually eating</h2>
     ${nums.map((n) => `<div class="answer-line">
       <strong>#${n}</strong> — ${escapeHtml(answerFor(n) || '—')}
     </div>`).join('')}</section>`;
 }
 
 function pendingAnswersCard() {
-  return `<section class="card"><h2>Answer key not set</h2>
-    <p class="hint">Rankings are below. Once the host enters the real flavors on the
-    admin page, this board will also score everyone's guesses.</p></section>`;
+  return `<section class="card"><h2>No answer key yet</h2>
+    <p class="hint">Rankings are below. Once the host types in the real flavors,
+    this board starts handing out points too.</p></section>`;
 }
 
 function chipLeaderboard(byAvg) {
   const top = byAvg[0] ? byAvg[0].avg : 10;
   const medals = ['🥇', '🥈', '🥉'];
-  return `<section class="card"><h2>Chip leaderboard</h2>
+  return `<section class="card"><h2>📊 The rankings</h2>
   <div class="scroll-x"><table class="tbl">
     <thead><tr>
       <th></th><th>Chip</th><th class="num">Avg</th>
@@ -140,13 +154,13 @@ function chipLeaderboard(byAvg) {
       <td class="num">±${s.spread}</td>
     </tr>`).join('')}</tbody>
   </table></div>
-  <p class="hint">Avg = mean rating out of 10. Split = how much people disagreed.</p>
+  <p class="hint">Avg = mean rating out of 10. Split = how loudly people disagreed.</p>
   </section>`;
 }
 
 function guessLeaderboard(scored, chipCount) {
   const medals = ['🥇', '🥈', '🥉'];
-  return `<section class="card"><h2>Who guessed best</h2>
+  return `<section class="card"><h2>👅 The Golden Tongue race</h2>
   <div class="scroll-x"><table class="tbl">
     <thead><tr><th></th><th>Taster</th><th class="num">Correct</th><th class="bar-cell"></th></tr></thead>
     <tbody>${scored.map((r, i) => `<tr>
@@ -160,7 +174,7 @@ function guessLeaderboard(scored, chipCount) {
 
 function perChip(nums, stats) {
   const statOf = (n) => stats.find((s) => s.chip === n) || { avg: '—', votes: 0 };
-  return `<section class="card"><h2>Every guess, chip by chip</h2>
+  return `<section class="card"><h2>🧾 The receipts</h2>
   ${nums.map((n) => {
     const s = statOf(n);
     const answer = answerFor(n);
@@ -176,7 +190,7 @@ function perChip(nums, stats) {
           const guess = (e.guess || '').trim();
           return `<div class="guess" data-sub="${sub.id}" data-chip="${n}">
             <span class="who">${escapeHtml(sub.player_name)}</span>
-            <span class="what${guess ? '' : ' blank'}">${guess ? escapeHtml(guess) : 'no guess'}</span>
+            <span class="what${guess ? '' : ' blank'}">${guess ? escapeHtml(guess) : 'chickened out'}</span>
             <span class="meta">
               <span class="hint">rated ${e.rank ?? '—'}/10</span>
               ${v ? `<span class="mark ${v.correct ? 'yes' : 'no'}">${v.correct ? '✓' : '✗'}</span>
@@ -193,7 +207,7 @@ function perChip(nums, stats) {
 }
 
 function rankMatrix(nums) {
-  return `<section class="card"><h2>Who rated what</h2>
+  return `<section class="card"><h2>🔍 Everybody\u2019s numbers</h2>
   <div class="scroll-x"><table class="tbl">
     <thead><tr><th>Taster</th>${nums.map((n) => `<th class="num">#${n}</th>`).join('')}</tr></thead>
     <tbody>${submissions.map((sub) => `<tr>
@@ -274,8 +288,8 @@ function waitForOpen() {
         cfg = fresh;
         el('#sub').textContent = 'Scoring';
         el('#content').innerHTML = `<div class="locked"><span class="lock-emoji">⏳</span>
-          <p><strong>Claude is scoring everyone's guesses.</strong></p>
-          <p>The board opens by itself in a moment — no need to refresh.</p></div>`;
+          <p><strong>Claude is judging you all.</strong></p>
+          <p>Politely, and very fast. The board opens by itself — don't refresh.</p></div>`;
       } else {
         cfg = fresh;
       }
@@ -294,12 +308,12 @@ function waitForOpen() {
       el('#sub').textContent = scoring ? 'Scoring' : 'Sealed';
       el('#content').innerHTML = scoring
         ? `<div class="locked"><span class="lock-emoji">⏳</span>
-            <p><strong>Claude is scoring everyone's guesses.</strong></p>
-            <p>The board opens by itself in a moment — no need to refresh.</p>
+            <p><strong>Claude is judging you all.</strong></p>
+            <p>Politely, and very fast. The board opens by itself — don't refresh.</p>
           </div>`
         : `<div class="locked"><span class="lock-emoji">🔒</span>
-            <p><strong>Results are locked until the host opens them.</strong></p>
-            <p>No peeking at other people's guesses mid-tasting — that's the whole point.</p>
+            <p><strong>Sealed until the host says so.</strong></p>
+            <p>Nobody likes a peeker. Go eat another chip.</p>
             <p style="margin-top:1.5rem"><a class="btn secondary" href="index.html${EVENT !== 'default' ? '?event=' + encodeURIComponent(EVENT) : ''}">Back to my sheet</a></p>
           </div>`;
       waitForOpen();

@@ -7,14 +7,14 @@
 <meta name="description" content="Guess the flavor, rank the chip. A blind taste test scorecard.">
 <meta name="theme-color" content="#d2691e">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥔</text></svg>">
-<link rel="stylesheet" href="css/style.css?v=202608161409">
+<link rel="stylesheet" href="css/style.css?v=202608161436">
 </head>
 <body>
 
 <header class="hero">
   <span class="chip-emoji">🥔</span>
   <h1 id="event-name">Chip Challenge</h1>
-  <p id="tagline">No labels. Guess the flavor, rate the chip.</p>
+  <p id="tagline" class="tagline">No labels. Guess the flavor, rate the chip.</p>
 </header>
 
 <main class="wrap">
@@ -29,22 +29,22 @@
   <form id="sheet" autocomplete="off">
 
     <section class="card">
-      <label class="field" for="player-name">Your name</label>
-      <input type="text" id="player-name" name="player-name" placeholder="e.g. Libby"
+      <label class="field" for="player-name">Who are we blaming?</label>
+      <input type="text" id="player-name" name="player-name" placeholder="Your name, or an alias"
              maxlength="40" autocapitalize="words" required>
-      <p class="hint">Used to put your sheet on the board. Use the same name if you come back to edit.</p>
+      <p class="hint">Goes on the leaderboard. Same name if you come back to change an answer.</p>
     </section>
 
     <section class="card" id="chips">
-      <h2>The chips</h2>
+      <h2>The lineup 🥔</h2>
       <!-- rows injected by js/form.js -->
     </section>
 
-    <button type="submit" class="btn" id="submit-btn">Submit my sheet</button>
-    <button type="button" class="btn ghost" id="clear-btn">Clear my sheet</button>
+    <button type="submit" class="btn" id="submit-btn">Submit my sheet 🫡</button>
+    <button type="button" class="btn ghost" id="clear-btn">Burn it all down</button>
 
     <p class="hint" style="text-align:center;margin-top:.75rem">
-      Your answers save on this device as you type — closing the tab won't lose them.
+      Saves on your phone as you type. Drop it, close it, sit on it — your answers survive.
     </p>
   </form>
 
@@ -56,7 +56,8 @@
   <p>Host? <a href="admin.html">Admin</a></p>
 </footer>
 
-<script src="js/config.js?v=202608161409"></script>
-<script src="js/form.js?v=202608161409"></script>
+<script src="js/config.js?v=202608161436"></script>
+<script src="js/flavor.js?v=202608161436"></script>
+<script src="js/form.js?v=202608161436"></script>
 </body>
 </html>

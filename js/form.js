@@ -75,6 +75,13 @@ function setRank(n, rank) {
   const readout = el(`#readout-${n}`);
   readout.textContent = rank ? `${rank}/10` : 'not rated';
   readout.classList.toggle('empty', !rank);
+
+  /* A little heckling as you rate. Purely decorative — never saved. */
+  const quip = el(`#quip-${n}`);
+  if (quip) {
+    quip.textContent = rank ? RATING_QUIPS[rank] : '';
+    quip.classList.toggle('show', !!rank);
+  }
 }
 
 /* ------------------------------------------------------------------ build */
@@ -87,11 +94,11 @@ function buildRows(count) {
         <span class="chip-title">Chip #${n}</span>
       </div>
 
-      <label class="field" for="guess-${n}">What flavor is it?</label>
-      <input type="text" id="guess-${n}" maxlength="80" placeholder="Your best guess…">
+      <label class="field" for="guess-${n}">What in the world is this?</label>
+      <input type="text" id="guess-${n}" maxlength="80" placeholder="${escapeHtml(pick(GUESS_PLACEHOLDERS))}">
 
       <div class="rank-label">
-        <span>How good is it?</span>
+        <span>How hard did it hit?</span>
         <span class="rank-readout empty" id="readout-${n}">not rated</span>
       </div>
       <div class="ranks" id="ranks-${n}" role="group" aria-label="Rating for chip ${n}">
@@ -99,7 +106,8 @@ function buildRows(count) {
           <button type="button" data-chip="${n}" data-rank="${r}" aria-pressed="false">${r}</button>
         `).join('')}
       </div>
-      <div class="scale-ends"><span>1 — inedible</span><span>10 — perfect</span></div>
+      <div class="scale-ends"><span>1 — an insult</span><span>10 — obscene</span></div>
+      <span class="quip" id="quip-${n}"></span>
     </div>
   `).join(''));
 
@@ -126,7 +134,7 @@ function restoreDraft() {
     if (typeof e.guess === 'string') input.value = e.guess;
     if (Number.isInteger(e.rank) && e.rank >= RANK_MIN && e.rank <= RANK_MAX) setRank(e.chip, e.rank);
   });
-  banner('info', 'Picked up where you left off.');
+  banner('info', 'Right where you left off. Nothing lost.');
 }
 
 function banner(kind, msg) {
@@ -144,13 +152,13 @@ async function submit(e) {
   const name = draft.name.trim();
 
   if (!name) {
-    banner('error', 'Put your name at the top first.');
+    banner('error', 'Name first. We need someone to blame.');
     el('#player-name').focus();
     return;
   }
   const unrated = draft.entries.filter((x) => !x.rank).map((x) => x.chip);
   if (unrated.length) {
-    banner('error', `Still need a rating for chip ${unrated.length > 1 ? 's' : ''} ${unrated.join(', ')}.`);
+    banner('error', `You skipped ${unrated.length > 1 ? 'chips' : 'chip'} ${unrated.join(', ')}. Rate ${unrated.length > 1 ? 'them' : 'it'} or admit you weren't paying attention.`);
     el(`#ranks-${unrated[0]}`).scrollIntoView({ behavior: 'smooth', block: 'center' });
     return;
   }
@@ -168,9 +176,10 @@ async function submit(e) {
       body: { slug: EVENT, name, entries: draft.entries },
     });
     saveDraft();
-    banner('ok', `Got it, ${name}. Come back any time to change an answer — just hit submit again.`);
-    btn.textContent = 'Submitted ✓ — resubmit to update';
-    flashSaved('Sent to the board');
+    banner('ok', pick(SUBMIT_LINES).replace('{name}', name));
+    btn.textContent = 'Submitted ✓ — resubmit to change an answer';
+    flashSaved('On the board');
+    celebrate();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   } catch (err) {
     banner('error', `Couldn't send that: ${err.message}. Your answers are still saved on this phone — try again in a sec.`);
@@ -178,6 +187,23 @@ async function submit(e) {
   } finally {
     btn.disabled = false;
   }
+}
+
+/* A short burst of snacks. Cleans itself up. */
+function celebrate() {
+  const bits = ['🥔', '🍟', '🧂', '🎉', '🌶️', '🧀', '🥨'];
+  const box = document.createElement('div');
+  box.className = 'confetti';
+  for (let i = 0; i < 14; i++) {
+    const bit = document.createElement('i');
+    bit.textContent = bits[Math.floor(Math.random() * bits.length)];
+    bit.style.left = Math.random() * 100 + 'vw';
+    bit.style.animationDuration = (1.6 + Math.random() * 1.2) + 's';
+    bit.style.animationDelay = (Math.random() * 0.4) + 's';
+    box.appendChild(bit);
+  }
+  document.body.appendChild(box);
+  setTimeout(() => box.remove(), 3600);
 }
 
 /* ------------------------------------------------------------------ boot */
@@ -192,7 +218,7 @@ async function submit(e) {
   }
   chipCount = cfg.chip_count || DEFAULT_CHIP_COUNT;
   el('#event-name').textContent = cfg.event_name || 'Chip Challenge';
-  el('#tagline').textContent = `${chipCount} chips. No labels. Guess the flavor, rate the chip.`;
+  el('#tagline').textContent = pick(TAGLINES);
   document.title = `${cfg.event_name || 'Chip Challenge'} — Blind Taste Test`;
 
   if (EVENT !== 'default') {
@@ -204,7 +230,7 @@ async function submit(e) {
   el('#sheet').addEventListener('submit', submit);
 
   el('#clear-btn').addEventListener('click', () => {
-    if (!confirm('Clear everything on this sheet? Anything you already submitted stays on the board.')) return;
+    if (!confirm('Wipe this whole sheet? Anything you already submitted stays on the board.')) return;
     localStorage.removeItem(DRAFT_KEY);
     location.reload();
   });
