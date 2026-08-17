@@ -35,6 +35,11 @@ const scoreFor = (sub, n) => scoreMap.get(`${sub.id}:${n}`) || null;
 const totalFor = (sub) => chipNumbers(cfg.chip_count)
   .reduce((sum, n) => sum + ((scoreFor(sub, n) || {}).score || 0), 0);
 
+/* Someone can be on the board before their guesses have been scored — a late
+   sheet, or a reveal that beat the scoring pass. Ranking them at 0/80 would
+   read as "they were terrible" rather than "not judged yet". */
+const isScored = (sub) => chipNumbers(cfg.chip_count).some((n) => scoreFor(sub, n));
+
 /* Colour the number by how good it is, so the board is readable at a glance. */
 function scoreClass(s) {
   if (s >= 9) return 'perfect';
@@ -49,14 +54,18 @@ function render() {
   const nums = chipNumbers(cfg.chip_count);
   const max = cfg.chip_count * 10;
 
-  const ranked = submissions
+  const scoredSubs = submissions.filter(isScored);
+  const pending = submissions.filter((s) => !isScored(s));
+
+  const ranked = scoredSubs
     .map((sub) => ({ sub, total: totalFor(sub) }))
     .sort((a, b) => b.total - a.total);
 
-  el('#sub').textContent = `${submissions.length} tasters · every guess out of 10`;
+  el('#sub').textContent = `${scoredSubs.length} tasters scored · every guess out of 10`;
 
   el('#content').innerHTML = [
     leaderboard(ranked, max),
+    pendingCard(pending),
     hardestChips(nums),
     ranked.map(({ sub, total }) => person(sub, total, nums, max)).join(''),
     legend(),
@@ -79,6 +88,17 @@ function leaderboard(ranked, max) {
   </table></div>
   <p class="hint">Every guess scored 1–10 for how close it got to the real flavor,
   instead of a flat right or wrong. ${max} points were on the table.</p>
+  </section>`;
+}
+
+function pendingCard(pending) {
+  if (!pending.length) return '';
+  const names = pending.map((s) => escapeHtml(s.player_name)).join(', ');
+  return `<section class="card"><h2>⏳ Still to be scored</h2>
+    <p><strong>${names}</strong></p>
+    <p class="hint">${pending.length > 1 ? 'These sheets are' : 'This sheet is'} in, but the
+    guesses haven't been graded yet — so ${pending.length > 1 ? 'they aren\u2019t' : 'it isn\u2019t'}
+    on the leaderboard. Nobody scored zero.</p>
   </section>`;
 }
 
