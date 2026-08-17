@@ -597,3 +597,60 @@ ol.steps li:focus-visible { outline: 2px solid var(--accent); outline-offset: 2p
 }
 .award .award-win { display: block; font-weight: 800; font-size: 1.05rem; line-height: 1.25; }
 .award .award-sub { display: block; font-size: .82rem; color: var(--ink-soft); }
+
+/* ------------------------------------------------------------------ closeness */
+
+.close-row {
+  display: flex;
+  align-items: flex-start;
+  gap: .7rem;
+  padding: .65rem 0;
+  border-bottom: 2px dotted var(--line);
+}
+.close-row:last-child { border-bottom: 0; }
+
+.close-score {
+  flex: 0 0 auto;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+  border: 2px solid var(--bg-card);
+  box-shadow: 0 2px 6px rgba(120,72,20,.25);
+}
+.close-score.perfect { background: linear-gradient(150deg, #ffd166, var(--gold)); color: #4a3400; }
+.close-score.close   { background: linear-gradient(150deg, #6ee7a8, var(--good)); }
+.close-score.warm    { background: linear-gradient(150deg, var(--accent-2), var(--accent)); }
+.close-score.cold    { background: linear-gradient(150deg, #a99483, #85705f); }
+
+.close-body { flex: 1; min-width: 0; }
+.close-guess {
+  display: block;
+  font-weight: 800;
+  font-size: 1rem;
+  overflow-wrap: anywhere;
+}
+.close-truth { display: block; font-size: .85rem; color: var(--ink-soft); }
+.close-truth strong { color: var(--accent); }
+.close-note {
+  display: block;
+  margin-top: .2rem;
+  font-size: .85rem;
+  font-style: italic;
+  color: var(--ink-soft);
+  overflow-wrap: anywhere;
+}
+
+.legend-row {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  padding: .45rem 0;
+  font-size: .88rem;
+}
+.legend-row .close-score { width: 2.9rem; height: 2.2rem; border-radius: 999px; font-size: .85rem; }

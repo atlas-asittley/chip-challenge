@@ -25,3 +25,6 @@ timeout: failed to run command ‘claude’: No such file or directory
 2026-08-16 14:18:43  [demo] judging requested
 2026-08-16 14:18:44  [demo] asking Claude to rule on 40 guesses
 2026-08-16 14:19:11  [demo] wrote 40 rulings — unlocking
+2026-08-16 20:19:51  [default] judging requested
+2026-08-16 20:19:52  [default] asking Claude to rule on 40 guesses
+2026-08-16 20:20:38  [default] wrote 40 rulings — unlocking
